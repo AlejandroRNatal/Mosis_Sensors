@@ -1,0 +1,143 @@
+Software Plan, Sensor Team, MOSIS
+
+Board - Tiva C TM4C1295NCPDT
+Sensors {
+	BAR 30, pressure sensor (I2C)
+	Celsius Fast-Responce, temperature sensor (I2C)
+	ENV-50-pH, pH probe {EZO pH circuit(pH reading),
+						 EZO-RTD circuit(temperature reading)} (UART)
+	Light sensor - TBD
+	SOS leak, leak sensor (1-pin interrupt)//hardware connected to a relay
+}
+
+ports and pins designations for conections - TBD
+ethernet(everything) - TBD
+how and where to store all recive data - TBD
+//an array example-[temp][press][ph][time][...]
+
+TODO:
+System test //probar que todo este en orden
+
+Start:
+Global Variables{
+	Pressure
+	Temperature
+	pH
+	pHTemp
+
+	SystemOk
+
+	DataArray[]
+		//[temp][press][pH]
+}
+
+
+void InitializeBoard(){
+	enable ports for all connections
+	setup pins: outputs, inputs
+	create and enable SOS leak sensor interrupt
+		//this interrupt has the highest priority
+		//shutsdown everything in case of a water leak
+
+	I2CInitialize()
+		//I2C module initialize
+	UARTInitialize()
+		//UART module initialize
+
+
+}
+
+void I2CInitialize(){
+	enable I2C periferal
+	wait for module to be ready(busy wait)
+	initialize Master and Slave
+		//Master - board
+		//Slave - Pressure sensor, temperature sensor
+	Set address for slaves 
+	I2C Send - reset: Pressure sensor, temperature sensor
+
+}
+
+void UARTInitialize(){
+	enable UART periferal
+	wait for module to be ready(busy wait)
+	Set the baud rate, number of data bits, turn off parity, number of stop bits, and stick mode
+	TODO:
+		creo que falta mas para que funcione bien
+}
+
+void TempReading(){//solo lee y guarda el valor en variable global, por ahora
+	I2C send - PROM read command
+		//for calibration, command depends on calibration value to be used
+	I2C read  - PROM data, 16 bits
+	I2C send - start ADC temp conversion(command - 0x48)
+	Delay - wait for conversion time(TBD)
+		//Data sheet does not specify time of conversion
+	I2C read - ADC temp result(command - 0x00)
+	Calculate temperature with respect to calibration parameter
+		//verificar, coeficientes para los calculos
+	Store result - Temperature
+	
+}
+
+void PressureReading(){
+	I2C send - PROM read command
+		//for calibration, command depends on calibration value to be used
+	I2C read - PROM data, 16 bits
+	I2C send - start pressure reading conversion
+	Delay - wait for conversion time(TBD)
+		//Data sheet does not specify time of conversion
+	I2C send - ADC read sequence
+	I2C read - pressure reading 
+	Store reading - Pressure
+
+}
+
+void pHReading(){
+	send R(ASCII) 
+		//read command for the sensor
+	Delay(800ms)
+	read response
+		//return ASCII string
+	Store reading - pH
+
+}
+
+void pHTempReading(){
+	send R(ASCII)
+	Delay(600ms)
+	read responcse
+		//return ASCCI string
+	Store reading - pHTemp
+}
+
+void EthernetCom(){
+	TODO: 
+		como se va a enviar la data
+		formato de la data
+}
+
+void SystemCheck(){
+	//verifica que todo este en orden
+}
+
+while(1){
+	TempReading()
+	PressureReading()
+	pHReading()
+
+	Delay()
+		//este sera para que el loop corra una vez por segundo
+		//para determinar este tiempo primero tenemos que encontrar
+		//los delays de "convertion time" para los sensores de temperatura y presion
+
+		//este tiempo es tentativo, se deben realizar pruebas con los sensores
+		//para encontrar el tiempo optimo para estas lecturas, para mejor precision
+}//loop para recolectar la data de los sensores
+
+
+
+
+
+
+
