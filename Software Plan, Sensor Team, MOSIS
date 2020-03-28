@@ -4,8 +4,8 @@ Board - Tiva C TM4C1295NCPDT
 Sensors {
 	BAR 30, pressure sensor (I2C)
 	Celsius Fast-Responce, temperature sensor (I2C)
-	ENV-50-pH, pH probe {EZO pH circuit(pH reading),
-						 EZO-RTD circuit(temperature reading)} (UART)
+	ENV-50-pH, pH probe {pH OEM circuit(pH reading),
+						 RTD OEM circuit(temperature reading)} (I2C)
 	Light sensor - TBD
 	SOS leak, leak sensor (1-pin interrupt)//hardware connected to a relay
 }
@@ -94,21 +94,40 @@ void PressureReading(){
 }
 
 void pHReading(){
-	send R(ASCII) 
-		//read command for the sensor
-	Delay(800ms)
-	read response
-		//return ASCII string
-	Store reading - pH
+	I2C send - (start, address(0x65), write, 0x16, stop)
+		//looks for pH reading in register address 0x16
+		//0x65 default address
+	I2C send - (start, read)
+	I2C read - pH-register1 = register 0x16 //pH reading MSB
+	I2C read - pH-register2 = register 0x17 //pH reading high byte
+	I2C read - pH-register3 = register 0x18 //pH reading low byte
+	I2C read - pH-register4 = register 0x19 //pH reading LSB
+		//each pH reading takes 420ms
+	I2C send  - (read, stop)
+
+	//add all 4 register to from a unsigned long
+	//cast unsigned long to a float
+	//divide float by 1,000
+	Store - pH
 
 }
 
 void pHTempReading(){
-	send R(ASCII)
-	Delay(600ms)
-	read responcse
-		//return ASCCI string
-	Store reading - pHTemp
+	I2C send - (start, address(0x68), write, 0x0E, stop)
+		//looks for temperature reading in register address 0x0E
+		//0x65 default address
+	I2C send - (start, read)
+	I2C read - temp-register1 = register 0x0E //temp reading MSB
+	I2C read - temp-register2 = register 0x0F //temp reading high byte
+	I2C read - temp-register3 = register 0x10 //temp reading low byte
+	I2C read - temp-register4 = register 0x11 //temp reading LSB
+		//each temp reading takes 420ms
+	I2C send  - (read, stop)
+
+	//add all 4 register to from a unsigned long
+	//cast unsigned long to a float
+	//divide float by 1,000
+	Store - temp
 }
 
 void EthernetCom(){
