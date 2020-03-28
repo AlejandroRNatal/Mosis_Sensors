@@ -6,7 +6,6 @@ Sensors {
 	Celsius Fast-Responce, temperature sensor (I2C)
 	ENV-50-pH, pH probe {pH OEM circuit(pH reading),
 						 RTD OEM circuit(temperature reading)} (I2C)
-	Light sensor - TBD
 	SOS leak, leak sensor (1-pin interrupt)//hardware connected to a relay
 }
 
