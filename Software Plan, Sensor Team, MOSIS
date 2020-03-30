@@ -6,16 +6,9 @@ Sensors {
 	Celsius Fast-Responce, temperature sensor (I2C)
 	ENV-50-pH, pH probe {pH OEM circuit(pH reading),
 						 RTD OEM circuit(temperature reading)} (I2C)
-	SOS leak, leak sensor (1-pin interrupt)//hardware connected to a relay
+	SOS leak, leak sensor (1-pin interrupt)
 }
 
-ports and pins designations for conections - TBD
-ethernet(everything) - TBD
-how and where to store all recive data - TBD
-//an array example-[temp][press][ph][time][...]
-
-TODO:
-System test //probar que todo este en orden
 
 Start:
 Global Variables{
@@ -42,8 +35,16 @@ void InitializeBoard(){
 		//I2C module initialize
 	UARTInitialize()
 		//UART module initialize
+	EthernetInit()
+		//Ethernet connection initialize
 
 
+}
+
+void SOS(){
+	//send to the other microcontroler that there is a leak in the system
+	//cuts power to all sensors that is controling
+	//shutdowns the board
 }
 
 void I2CInitialize(){
@@ -63,6 +64,13 @@ void UARTInitialize(){
 	Set the baud rate, number of data bits, turn off parity, number of stop bits, and stick mode
 	TODO:
 		creo que falta mas para que funcione bien
+}
+
+void EthernetInit(){
+	activate port
+	set comunication protocol
+	set addresses
+	test connection
 }
 
 void TempReading(){//solo lee y guarda el valor en variable global, por ahora
@@ -129,30 +137,36 @@ void pHTempReading(){
 	Store - temp
 }
 
-void EthernetCom(){
-	TODO: 
-		como se va a enviar la data
-		formato de la data
+void EthernetComSend(){
+	//sends data array of all sensors readings 
 }
 
 void SystemCheck(){
 	//verifica que todo este en orden
+	returns SystemOk
 }
 
-while(1){
-	TempReading()
-	PressureReading()
-	pHReading()
+void main(){
 
-	Delay()
-		//este sera para que el loop corra una vez por segundo
-		//para determinar este tiempo primero tenemos que encontrar
-		//los delays de "convertion time" para los sensores de temperatura y presion
+	InitializeBoard()
+	SystemCheck()
 
-		//este tiempo es tentativo, se deben realizar pruebas con los sensores
-		//para encontrar el tiempo optimo para estas lecturas, para mejor precision
-}//loop para recolectar la data de los sensores
+	while(1){
+		TempReading()
+		PressureReading()
+		pHReading()
 
+		EthernetComSend()
+
+		Delay()
+			//este sera para que el loop corra una vez por segundo
+			//para determinar este tiempo primero tenemos que encontrar
+			//los delays de "convertion time" para los sensores de temperatura y presion
+
+			//este tiempo es tentativo, se deben realizar pruebas con los sensores
+			//para encontrar el tiempo optimo para estas lecturas, para mejor precision
+	}//loop para recolectar la data de los sensores
+}
 
 
 
