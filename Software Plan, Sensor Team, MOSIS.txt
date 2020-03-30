@@ -1,0 +1,175 @@
+Software Plan, Sensor Team, MOSIS
+
+Board - Tiva C TM4C1295NCPDT
+Sensors {
+	BAR 30, pressure sensor (I2C)
+	Celsius Fast-Responce, temperature sensor (I2C)
+	ENV-50-pH, pH probe {pH OEM circuit(pH reading),
+						 RTD OEM circuit(temperature reading)} (I2C)
+	SOS leak, leak sensor (1-pin interrupt)
+}
+
+
+Start:
+Global Variables{
+	Pressure
+	Temperature
+	pH
+	pHTemp
+
+	SystemOk
+
+	DataArray[]
+		//[temp][press][pH]
+}
+
+
+void InitializeBoard(){
+	enable ports for all connections
+	setup pins: outputs, inputs
+	create and enable SOS leak sensor interrupt
+		//this interrupt has the highest priority
+		//shutsdown everything in case of a water leak
+
+	I2CInitialize()
+		//I2C module initialize
+	UARTInitialize()
+		//UART module initialize
+	EthernetInit()
+		//Ethernet connection initialize
+
+
+}
+
+void SOS(){
+	//send to the other microcontroler that there is a leak in the system
+	//cuts power to all sensors that is controling
+	//shutdowns the board
+}
+
+void I2CInitialize(){
+	enable I2C periferal
+	wait for module to be ready(busy wait)
+	initialize Master and Slave
+		//Master - board
+		//Slave - Pressure sensor, temperature sensor
+	Set address for slaves 
+	I2C Send - reset: Pressure sensor, temperature sensor
+
+}
+
+void UARTInitialize(){
+	enable UART periferal
+	wait for module to be ready(busy wait)
+	Set the baud rate, number of data bits, turn off parity, number of stop bits, and stick mode
+	TODO:
+		creo que falta mas para que funcione bien
+}
+
+void EthernetInit(){
+	activate port
+	set comunication protocol
+	set addresses
+	test connection
+}
+
+void TempReading(){//solo lee y guarda el valor en variable global, por ahora
+	I2C send - PROM read command
+		//for calibration, command depends on calibration value to be used
+	I2C read  - PROM data, 16 bits
+	I2C send - start ADC temp conversion(command - 0x48)
+	Delay - wait for conversion time(TBD)
+		//Data sheet does not specify time of conversion
+	I2C read - ADC temp result(command - 0x00)
+	Calculate temperature with respect to calibration parameter
+		//verificar, coeficientes para los calculos
+	Store result - Temperature
+	
+}
+
+void PressureReading(){
+	I2C send - PROM read command
+		//for calibration, command depends on calibration value to be used
+	I2C read - PROM data, 16 bits
+	I2C send - start pressure reading conversion
+	Delay - wait for conversion time(TBD)
+		//Data sheet does not specify time of conversion
+	I2C send - ADC read sequence
+	I2C read - pressure reading 
+	Store reading - Pressure
+
+}
+
+void pHReading(){
+	I2C send - (start, address(0x65), write, 0x16, stop)
+		//looks for pH reading in register address 0x16
+		//0x65 default address
+	I2C send - (start, read)
+	I2C read - pH-register1 = register 0x16 //pH reading MSB
+	I2C read - pH-register2 = register 0x17 //pH reading high byte
+	I2C read - pH-register3 = register 0x18 //pH reading low byte
+	I2C read - pH-register4 = register 0x19 //pH reading LSB
+		//each pH reading takes 420ms
+	I2C send  - (read, stop)
+
+	//add all 4 register to from a unsigned long
+	//cast unsigned long to a float
+	//divide float by 1,000
+	Store - pH
+
+}
+
+void pHTempReading(){
+	I2C send - (start, address(0x68), write, 0x0E, stop)
+		//looks for temperature reading in register address 0x0E
+		//0x65 default address
+	I2C send - (start, read)
+	I2C read - temp-register1 = register 0x0E //temp reading MSB
+	I2C read - temp-register2 = register 0x0F //temp reading high byte
+	I2C read - temp-register3 = register 0x10 //temp reading low byte
+	I2C read - temp-register4 = register 0x11 //temp reading LSB
+		//each temp reading takes 420ms
+	I2C send  - (read, stop)
+
+	//add all 4 register to from a unsigned long
+	//cast unsigned long to a float
+	//divide float by 1,000
+	Store - temp
+}
+
+void EthernetComSend(){
+	//sends data array of all sensors readings 
+}
+
+void SystemCheck(){
+	//verifica que todo este en orden
+	returns SystemOk
+}
+
+void main(){
+
+	InitializeBoard()
+	SystemCheck()
+
+	while(1){
+		TempReading()
+		PressureReading()
+		pHReading()
+
+		EthernetComSend()
+
+		Delay()
+			//este sera para que el loop corra una vez por segundo
+			//para determinar este tiempo primero tenemos que encontrar
+			//los delays de "convertion time" para los sensores de temperatura y presion
+
+			//este tiempo es tentativo, se deben realizar pruebas con los sensores
+			//para encontrar el tiempo optimo para estas lecturas, para mejor precision
+	}//loop para recolectar la data de los sensores
+}
+
+
+
+
+
+
